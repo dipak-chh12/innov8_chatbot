@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Innov8 Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: url('/mnt/data/image.png') no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        #chat-area {
+            width: 100%;
+            max-width: 500px;
+            height: 400px;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            overflow-y: auto;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .input-container {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            max-width: 500px;
+            padding: 10px;
+        }
+        input[type="text"] {
+            width: 70%;
+            padding: 12px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-right: 10px;
+            font-size: 16px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        button {
+            width: 30%;
+            padding: 12px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .user-message,
+        .bot-message {
+          margin: 10px 0; 
+          font-size:16px; 
+          padding :10 px; 
+          border-radius :10 px; 
+          width :fit-content; 
+          max-width :80 %; 
+      }
+      .user-message {
+          background-color:#e1f5fe; 
+          color:#0277bd; 
+          align-self:flex-end; 
+          margin-left:auto; 
+      }
+      .bot-message {
+          background-color:#e8f5e9; 
+          color:#2e7d32; 
+          align-self:flex-start; 
+          margin-right:auto; 
+      }
+
+      /* Responsive adjustments */
+      @media (max-width :768 px) {
+          body {
+              padding :20 px; 
+              height:auto; 
+          }
+          #chat-area {
+              height :300 px; 
+              max-width :100 %; 
+          }
+          .input-container {
+              flex-direction :column; 
+              align-items :stretch; 
+          }
+          input[type="text"], button {
+              width :100 %; 
+              margin :5 px ; 
+          }
+      }
+
+      @media (max-width :480 px) {
+          #chat-area {
+              height :250 px; 
+          }
+          input[type="text"], button {
+              font-size :14 px; 
+              padding :10 px ; 
+          }
+          .user-message,
+          .bot-message {
+              font-size :14 px ; 
+          }
+      }
+
+    </style>
+</head>
+<body>
+    <h1>Responsive Chatbot</h1>
+    <div id="chat-area"></div>
+    <div class="input-container">
+        <input type="text" id="input" placeholder="Ask me anything...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <script>
+        // Function to convert Markdown (like **bold**) and newlines (\n) to HTML
+        function markdownToHTML(text) {
+           // Convert **bold** to <strong>bold</strong>
+           const boldText = text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+           // Convert newlines (\n) to <br> and remove any trailing asterisks
+           const formattedText = boldText.replace(/\n/g,'<br>').replace(/\*/g,'');
+           return formattedText ;
+       }
+
+       async function sendMessage() {
+           const inputText = document.getElementById("input").value ;
+           document.getElementById("input").value='' ; // Clear input field
+           const chatArea=document.getElementById("chat-area");
+
+           chatArea.innerHTML += `<p class="user-message"><strong>User:</strong> ${inputText}</p>`;
+           chatArea.scrollTop=chatArea.scrollHeight ; // Scroll to the bottom
+
+           try {
+               const response=await fetch('http://127.0.0.1:5000/api/generate-text',{
+                   method:'POST',
+                   headers:{'Content-Type':'application/json'},
+                   body :JSON.stringify({prompt : inputText })
+               });
+
+               if (!response.ok) {
+                   const errorText=await response.text();
+                   console.error(`Network response was not ok:${errorText}`);
+                   throw new Error(`Network response was not ok:${errorText}`);
+               }
+
+               const data=await response.json();
+               const formattedResponse=markdownToHTML(data.generated_text || data.profile_summary || JSON.stringify(data));
+               chatArea.innerHTML += `<p class="bot-message"><strong>Bot:</strong>${formattedResponse}</p>`;
+           } catch (error) {
+               chatArea.innerHTML += `<p class="bot-message"><strong>Bot:</strong>Error occurred:${error.message}</p>`;
+               console.error('Fetch error:', error);
+           }
+
+           chatArea.scrollTop=chatArea.scrollHeight ; // Scroll to the bottom
+       }
+   </script>
+</body>
+</html>
